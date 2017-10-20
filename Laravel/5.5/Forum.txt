@@ -173,10 +173,15 @@ Kata: Building a Forum
         When any user browses the single thread
         Then the thread's creator's name should be visible
 
-# Story: An authenticated user may participate in forum threads
+# Story: An authenticated user may participate in forum threads: POST /threads/id/replies
   [ ] Feature test - an_authenticated_user_may_participate_forum_threads
         Given we have an authenticated user
         And an existing thread
         When the user adds a reply to the thread
         Then their reply should be visible on the page
+  [ ] Feature test - unauthenticated users may not add a reply
 
+  - add to app/Exceptions/Handler.php::render() at first line "if (app()->environment() === 'testing') throw $exception;"
+  - add to ReplyController@store
+  - add Thread::addReply
+  - add middleware 'auth' to reply controller
