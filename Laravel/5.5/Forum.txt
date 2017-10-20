@@ -1,0 +1,182 @@
+https://laracasts.com/series/lets-build-a-forum-with-laravel/episodes/1
+
+Kata: Building a Forum
+
+# ===== 1: setup
+
+# Setup docker Laravel dev environment
+  [ ] Uses current Laravel project docker Setup
+  [ ] Web service vhost file serves from forum/public
+  [ ] Web, Database and App services are running
+
+  - cp -R /Volumes/casesensitive/other/environments/ProjectTemplates/Laravel/5.5/ .
+  - vim docker/vhost.conf
+  - dc up --build -d
+
+# Create new laravel project 'forum'
+  [ ] Laravel composer project 'forum' installed
+  [ ] npm modules installed
+
+  - dc exec app bash
+  - laravel new forum
+  - cd forum
+  - yarn install
+
+# Setup database
+  [ ] Database service has new db 'forum' - user 'root', password 'root'
+  [ ] Laravel project configured to use forum database
+
+  - mysql -hdatabase -uroot -proot -e 'create schema forum'
+  - edit .env file
+
+# Create new Model Thread as a resource controller
+ [ ] Created: Model, migration, controller
+ [ ] user_id : integer
+ [ ] title : string
+ [ ] body : text
+
+  - ar make:model Thread -mr
+
+# Create new model Reply as a resource controller
+  [ ] Created: Model, migration, controller
+  [ ] thread_id : integer
+  [ ] user_id : integer
+  [ ] body : text
+
+  - ar make:model Reply -mr
+
+# Migrate database
+  [ ] tables User, Thread and Reply created
+
+  - ar migrate
+
+# Create Thread factory, associating each Thread to a new user
+  [ ] Injects ID from new User
+
+  - database/factories/UserFactory
+
+    'user_id' => function () {
+      return factory('App\User')->create()->id;
+    },
+    'title' => $faker->sentence,
+    'body' => $faker->paragraph
+
+# Create 50 new threads in the db
+  [ ] Tinker: App\Thread::count() = 50
+
+  - factory('App\Thread', 50)->create()
+
+# Create Reply factory, associating reply with a new user and a new thread [ps]
+  [ ] Injects ID from new User
+  [ ] Injects ID from new Thread
+
+  - database/factories/UserFactory
+
+      return [
+          'thread_id' => function() {
+              return factory('App\Thread')->create()->id;
+          },
+          'user_id' => function() {
+              return factory('App\User')->create()->id;
+          },
+          'body' => $faker->paragraph()
+      ];
+
+# Iterate over the previously created threads and create 10 new replies for each thread
+  [ ] Tinker: App\Reply::count() = 500
+
+  - App\Thread::all()->each(function($thread) { factory('App\Reply', 10)->create(['thread_id' => $thread->id]); })
+
+
+
+# ===== 2: Test driving Threads
+
+# Setup phpunit to use an sqlite in-memory database for tests only
+  [ ] phpunit.xml
+
+  - DB_CONNECTION value='sqlite'
+  - DB_DATABASE value=':memory:'
+
+# Add authentication scaffolding to project
+  [ ] Authentication scaffolding added
+
+  - ar make:auth
+
+# Story: A user can browse all threads: /threads
+  [ ] Feature test - a_user_can_browse_all_threads
+        Given we have one thread
+        When any user browses all threads
+        Then all the threads are displayed
+  [ ] Unit test
+  [ ] Route/Controller/View
+  [ ] Yarn phpunit test command
+
+  - 'use DatabaseMigrations TAB'
+  - package.json
+  - threads.index
+  - use $response->assertSee()
+  - "panel-heading" = Forum threads
+
+        @foreach($threads as $thread)
+
+            <article>
+                <h4>{{ $thread->title }}</h4>
+                <div class="body">{{ $thread->body }}</div>
+            </article>
+
+        @endforeach
+
+# Story: A user can browse a single thread: /threads/id
+  [ ] Feature test - a_user_can_browse_a_single_thread
+        Given we have a thread
+        When any user browses the single thread
+        Then the thread title and body should be visible
+  [ ] Unit test
+  [ ] Route/Controller/View
+
+  - threads.show
+
+# Story: A user can navigate from the threads view, to a single thread
+  [ ] Feature test - href around title to single thread display
+
+
+
+# ===== 3: A thread can have replies
+
+# Story: A user can read replies associated with a thread: /threads/id
+  [ ] Feature test - a_user_can_read_replies_that_are_associated_with_a_thread
+        Given we have a thread
+        And the thread has replies
+        When any user browses the single thread
+        Then the replies should be visible
+        And each reply should have a header "Name said NNN ago..."
+        And the reply owner's name should link to "#"
+  [ ] Unit tests
+        * Thread has a creator
+        * Thread hasMany replies
+        * Reply belongsTo an owner
+
+  - Replies shown in new row, each in a panel
+  - Carbon diffForHumans()
+
+
+
+# ===== 4: A user may respond to threads
+
+# Refactor replies template out into its own partial
+
+  - threads.reply
+
+# Story: A thread should display its creator's name alongside the title
+  [ ] Feature test - a_user_can_browse_a_single_thread
+        Given we have a thread
+        When any user browses the single thread
+        Then the thread's creator's name should be visible
+
+# Story: An authenticated user may participate in forum threads
+  [ ] Feature test - an_authenticated_user_may_participate_forum_threads
+        Given we have an authenticated user
+        And an existing thread
+        When the user adds a reply to the thread
+        Then their reply should be visible on the page
+
