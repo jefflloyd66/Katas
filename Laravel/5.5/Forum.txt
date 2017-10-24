@@ -61,11 +61,6 @@ Kata: Building a Forum
     'title' => $faker->sentence,
     'body' => $faker->paragraph
 
-# Create 50 new threads in the db
-  [ ] Tinker: App\Thread::count() = 50
-
-  - factory('App\Thread', 50)->create()
-
 # Create Reply factory, associating reply with a new user and a new thread [ps]
   [ ] Injects ID from new User
   [ ] Injects ID from new Thread
@@ -81,6 +76,11 @@ Kata: Building a Forum
           },
           'body' => $faker->paragraph()
       ];
+
+# Create 50 new threads in the db
+  [ ] Tinker: App\Thread::count() = 50
+
+  - factory('App\Thread', 50)->create()
 
 # Iterate over the previously created threads and create 10 new replies for each thread
   [ ] Tinker: App\Reply::count() = 500
@@ -106,14 +106,13 @@ Kata: Building a Forum
   [ ] Feature test - a_user_can_browse_all_threads
         Given we have one thread
         When any user browses all threads
-        Then all the threads are displayed
-  [ ] Unit test
+        Then one thread is displayed
   [ ] Route/Controller/View
-  [ ] Yarn phpunit test command
+  [ ] Yarn phpunit test commands 'pu' and 'puf'
 
-  - 'use DatabaseMigrations TAB'
+  - use DatabaseMigrations
   - package.json
-  - threads.index
+  - view threads.index
   - use $response->assertSee()
   - "panel-heading" = Forum threads
 
@@ -152,7 +151,7 @@ Kata: Building a Forum
         And each reply should have a header "Name said NNN ago..."
         And the reply owner's name should link to "#"
   [ ] Unit tests
-        * Thread has a creator
+        * Thread belongsTo a creator
         * Thread hasMany replies
         * Reply belongsTo an owner
 
@@ -185,3 +184,84 @@ Kata: Building a Forum
   - add to ReplyController@store
   - add Thread::addReply
   - add middleware 'auth' to reply controller
+
+
+# Story: An authenticated user should see a reply form so that they can reply to a thread
+  [ ] Feature test - an_authenticated_sees_a_reply_form
+        Given we have an authenticated user
+        And an existing thread
+        When the user browses the single thread
+        Then the reply form should be visible
+
+  - add form to show.blade.php with id 'reply_form'
+  - route = POST /threads/{id}/replies
+
+# Story: An unauthenticated user should see a link to login page instead of reply form
+  [ ] Feature test - unauthenticated_user_does_not_see_reply_form
+        Given we have an unauthenticated user
+        And an existing thread
+        When the user browses the single thread
+        Then the reply form should not be visible
+        And there should be a link to the login page
+
+# Story: all users should see a link in the nav bar to 'All Threads'
+  [ ] Feature test - nav_bar_should_have_link_to_all_threads
+        Given we are viewing the nav bar
+        When it is displayed
+        It should contain a link to "All Threads"
+
+  - new Feature test file NavbarTest
+
+
+# ===== 6: Authenticated users can create posts
+
+# Story: an authenticated user can create new forum threads
+  [ ] Feature test - an_authenticated_user_can_create_new_forum_threads
+        Given we have an authenticated user
+        When we hit the endpoint to create a new thread
+        And when we visit the threads page
+        Then we should see the new thread
+
+  - new Feature test file CreateThreadsTest
+
+# Story: guests may not create threads
+  [ ] Feature test - guests_may_not_create_threads
+        Given we have a guest
+        When we hit the endpoint to create a new thread
+        Then we expect an exception
+
+
+# ===== 7: Unit test helpers
+
+# Enable unit tests to pull in helper files
+# Create 2 helper methods: 'create' and 'make'
+# Create helper method: $this->signIn($user = null)
+
+  - composer.json "autoload-dev" new "files": [ filename ]
+
+
+# ===== 8: Handling exceptions
+
+# Replace Thread endpoints in routes with a route resource
+# Create a form for new threads
+# Ensure form is visible only to logged in users
+# Add a new feature test for guests not view create thread form
+
+
+
+# ===== 9: A thread must belong to a channel
+  [ ] Unit test: a_thread_belongs_to_a_channel
+  [ ] Unit test: a_thread_can_make_a_string_path
+
+
+
+# ===== 10: validation errors
+
+# Story: new threads need to be valid
+  [ ] Feature test - a_thread_requires_a_title
+  [ ] Feature test - a_thread_requires_a_body
+  [ ] Feature test - a_thread_requires_a_valid_channel
+
+# Story: new replies need to be valid
+  [ ] Feature test - a_reply_requires_a_body
+
